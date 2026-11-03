@@ -1,3 +1,13 @@
+try {
+    val pe = Class.forName("java.lang.ProcessEnvironment")
+    for (fieldName in listOf("theEnvironment", "theCaseInsensitiveEnvironment")) {
+        val f = pe.getDeclaredField(fieldName)
+        f.isAccessible = true
+        (f.get(null) as? MutableMap<String, String>)?.remove("ANDROID_PREFS_ROOT")
+    }
+} catch (_: Throwable) {
+}
+
 pluginManagement {
     repositories {
         gradlePluginPortal()

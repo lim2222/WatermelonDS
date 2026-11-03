@@ -12,3 +12,9 @@ plugins {
 tasks.register("clean", Delete::class) {
     delete(rootProject.layout.buildDirectory)
 }
+
+allprojects {
+    if (tasks.findByName("prepareKotlinBuildScriptModel") == null) {
+        tasks.register("prepareKotlinBuildScriptModel")
+    }
+}
