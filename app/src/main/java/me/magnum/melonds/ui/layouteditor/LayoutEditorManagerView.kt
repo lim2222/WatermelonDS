@@ -711,11 +711,13 @@ class LayoutEditorManagerView(
     private fun openButtonsMenu() {
         hideBottomControls()
         val instantiatedComponents = binding.viewLayoutEditor.getInstantiatedComponents()
-        val componentsToShow = LayoutComponent.entries.filter { candidate ->
-            candidate !in instantiatedComponents && instantiatedComponents.none { current ->
-                current.matchingInputs.any { it in candidate.matchingInputs }
-            }
-        }
+		val componentsToShow = LayoutComponent.entries.filter { candidate ->
+			candidate !in instantiatedComponents && instantiatedComponents.none { current ->
+				current != LayoutComponent.TATACON &&
+					candidate != LayoutComponent.TATACON &&
+					current.matchingInputs.any { it in candidate.matchingInputs }
+			}
+		}
 
         val themedContext = android.view.ContextThemeWrapper(context, R.style.AppTheme)
         val dialogBuilder = AlertDialog.Builder(themedContext)

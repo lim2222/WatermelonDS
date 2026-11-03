@@ -29,5 +29,7 @@ fun getLayoutComponentName(layoutComponent: LayoutComponent): Int {
         LayoutComponent.BUTTON_QUICK_SAVE -> R.string.input_quick_save
         LayoutComponent.BUTTON_QUICK_LOAD -> R.string.input_quick_load
         LayoutComponent.BUTTON_REWIND -> R.string.rewind
+        LayoutComponent.TATACON -> R.string.input_tatacon
+        LayoutComponent.TATACON_BUTTON -> R.string.input_taiko
     }
 }

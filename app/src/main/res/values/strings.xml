@@ -1158,6 +1158,8 @@
     <string name="waiting_for_combo">Hold two different buttons on the same controller. The first button can act before the combo is complete; use an unassigned button as the modifier to avoid this.</string>
     <string name="input_combo_conflict">This combination is already assigned to %1$s. Clear that assignment first, or choose a different pair.</string>
     <string name="input_slot2_analog">Slot-2 analog stick</string>
+    <string name="input_tatacon">TaTaCon drum</string>
+    <string name="input_taiko">TaTaCon hotkey</string>
     <string name="wfc_settings_title">Nintendo WFC settings</string>
     <string name="wfc_settings_summary">With built-in firmware, store wfcsettings.bin in a folder you can sync with a PC. An existing file is kept; an empty folder receives your current profile. Set the same MAC address on both emulators and sync only while both are closed. Changes apply the next time you launch a game.</string>
     <string name="wfc_settings_directory">WFC settings folder</string>

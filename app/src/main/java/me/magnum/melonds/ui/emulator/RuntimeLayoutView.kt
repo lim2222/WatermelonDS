@@ -1,7 +1,9 @@
 package me.magnum.melonds.ui.emulator
 
 import android.content.Context
+import android.graphics.Rect
 import android.util.AttributeSet
+import android.view.MotionEvent
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import dagger.hilt.android.AndroidEntryPoint
@@ -18,7 +20,10 @@ import me.magnum.melonds.ui.emulator.input.IInputListener
 import me.magnum.melonds.ui.emulator.input.Slot2AnalogInput
 import me.magnum.melonds.ui.emulator.input.Slot2AnalogInputHandler
 import me.magnum.melonds.ui.emulator.input.SingleButtonInputHandler
+import me.magnum.melonds.ui.emulator.input.TataconInputHandler
 import me.magnum.melonds.ui.emulator.input.TouchscreenInputHandler
+import me.magnum.melonds.ui.emulator.input.view.TataconView
+import me.magnum.melonds.ui.emulator.input.view.TaikoButtonView
 import me.magnum.melonds.ui.emulator.input.view.ToggleableImageView
 import me.magnum.melonds.ui.emulator.model.ConnectedControllersState
 import me.magnum.melonds.ui.emulator.model.RuntimeInputLayoutConfiguration
@@ -39,7 +44,9 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
     private var connectedControllersState: ConnectedControllersState = ConnectedControllersState.NoControllers
     private var slot2AnalogInput: Slot2AnalogInput? = null
     private var slot2AnalogHandler: Slot2AnalogInputHandler? = null
+    private var tataconHandler: TataconInputHandler? = null
     private val virtualButtonInputs = mutableMapOf<LayoutComponent, SingleButtonInputHandler>()
+    private val blockingComponentRect = Rect()
 
     fun setSlot2AnalogInput(input: Slot2AnalogInput) {
         releaseVirtualButtonInputs()
@@ -94,6 +101,7 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
         releaseVirtualButtonInputs()
         virtualButtonInputs.clear()
         slot2AnalogHandler = null
+        tataconHandler = null
         val currentRuntimeLayout = currentRuntimeLayout
         if (currentRuntimeLayout == null) {
             isGone = true
@@ -112,6 +120,15 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
             }
         }
         val enableHapticFeedback = currentRuntimeLayout.isHapticFeedbackEnabled
+        systemInputHandler?.let { inputListener ->
+            // The drum does not get a touch listener: it owns the whole layout surface, so its touches
+            // are picked up in dispatchTouchEvent() instead
+            getLayoutComponentView(LayoutComponent.TATACON)?.view?.let { view ->
+                if (view is TataconView) {
+                    tataconHandler = TataconInputHandler(inputListener, enableHapticFeedback, touchVibrator)
+                }
+            }
+        }
         systemInputHandler?.let {
             getLayoutComponentView(LayoutComponent.DPAD)?.view?.setOnTouchListener(DpadInputHandler(it, enableHapticFeedback, touchVibrator))
             getLayoutComponentView(LayoutComponent.BUTTONS)?.view?.setOnTouchListener(ButtonsInputHandler(it, enableHapticFeedback, touchVibrator))
@@ -123,6 +140,23 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
             }
             getLayoutComponentView(LayoutComponent.BUTTON_L)?.view?.setOnTouchListener(SingleButtonInputHandler(it, Input.L, enableHapticFeedback, touchVibrator))
             getLayoutComponentView(LayoutComponent.BUTTON_R)?.view?.setOnTouchListener(SingleButtonInputHandler(it, Input.R, enableHapticFeedback, touchVibrator))
+            getLayoutComponentView(LayoutComponent.TATACON_BUTTON)?.view?.let { view ->
+                val handler = SingleButtonInputHandler(it, Input.TAIKO, enableHapticFeedback, touchVibrator)
+                virtualButtonInputs[LayoutComponent.TATACON_BUTTON] = handler
+                view.setOnTouchListener { v, event ->
+                    val result = handler.onTouch(v, event)
+                    if (v is TaikoButtonView) {
+                        when (event.actionMasked) {
+                            MotionEvent.ACTION_DOWN -> v.setPressedState(true)
+                            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                v.setPressedState(false)
+                                toggleTataconVisibility()
+                            }
+                        }
+                    }
+                    return@setOnTouchListener result
+                }
+            }
             getLayoutComponentView(LayoutComponent.BUTTON_SELECT)?.view?.setOnTouchListener(SingleButtonInputHandler(it, Input.SELECT, enableHapticFeedback, touchVibrator))
             getLayoutComponentView(LayoutComponent.BUTTON_START)?.view?.setOnTouchListener(SingleButtonInputHandler(it, Input.START, enableHapticFeedback, touchVibrator))
             getLayoutComponentView(LayoutComponent.BUTTON_HINGE)?.view?.setOnTouchListener(SingleButtonInputHandler(it, Input.HINGE, enableHapticFeedback, touchVibrator))
@@ -166,12 +200,14 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
     fun releaseVirtualButtonInputs() {
         slot2AnalogHandler?.release()
         virtualButtonInputs.values.forEach { it.release() }
+        tataconHandler?.release()
     }
 
     override fun destroyLayout() {
         releaseVirtualButtonInputs()
         virtualButtonInputs.clear()
         slot2AnalogHandler = null
+        tataconHandler = null
         super.destroyLayout()
     }
 
@@ -180,7 +216,85 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
         super.onDetachedFromWindow()
     }
 
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val handler = tataconHandler
+        val drum = getLayoutComponentView(LayoutComponent.TATACON)?.view as? TataconView
+        if (handler == null || drum == null || !isVisible || !drum.isVisible) {
+            handler?.release()
+            return super.dispatchTouchEvent(ev)
+        }
+
+        val drumPointers = handler.onLayoutTouch(ev, drum, ::isBlockedByOtherComponent)
+        if (drumPointers.isEmpty()) {
+            return super.dispatchTouchEvent(ev)
+        }
+
+        // Some pointers belong to the drum and must not reach the other components
+        val filteredEvent = obtainFilteredEvent(ev, drumPointers) ?: return true
+        return try {
+            super.dispatchTouchEvent(filteredEvent)
+        } finally {
+            if (filteredEvent !== ev) {
+                filteredEvent.recycle()
+            }
+        }
+    }
+
+    private fun isBlockedByOtherComponent(x: Int, y: Int): Boolean {
+        for (componentView in getLayoutComponentViews()) {
+            if (componentView.component.isScreen() || componentView.component == LayoutComponent.TATACON) continue
+            val view = componentView.view
+            if (!view.isVisible) continue
+            view.getHitRect(blockingComponentRect)
+            if (blockingComponentRect.contains(x, y)) return true
+        }
+        return false
+    }
+
+    /**
+     * Builds an event that only contains the pointers that do not belong to the drum. The action is
+     * rewritten accordingly, since the remaining components never saw the removed pointers going
+     * down. Returns null if no pointer is left, and the original event if nothing was removed.
+     */
+    private fun obtainFilteredEvent(ev: MotionEvent, drumPointers: Set<Int>): MotionEvent? {
+        val keptPointers = (0 until ev.pointerCount).filter { ev.getPointerId(it) !in drumPointers }
+        if (keptPointers.size == ev.pointerCount) return ev
+        if (keptPointers.isEmpty()) return null
+
+        val actionIndex = ev.actionIndex
+        val isActionPointerKept = ev.getPointerId(actionIndex) !in drumPointers
+        val action = when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> when {
+                !isActionPointerKept -> MotionEvent.ACTION_MOVE
+                keptPointers.size == 1 -> MotionEvent.ACTION_DOWN
+                else -> MotionEvent.ACTION_POINTER_DOWN or
+                        (keptPointers.indexOf(actionIndex) shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> when {
+                !isActionPointerKept -> MotionEvent.ACTION_MOVE
+                keptPointers.size == 1 -> MotionEvent.ACTION_UP
+                else -> MotionEvent.ACTION_POINTER_UP or
+                        (keptPointers.indexOf(actionIndex) shl MotionEvent.ACTION_POINTER_INDEX_SHIFT)
+            }
+            else -> ev.actionMasked
+        }
+
+        val pointerProperties = Array(keptPointers.size) { i ->
+            MotionEvent.PointerProperties().also { ev.getPointerProperties(keptPointers[i], it) }
+        }
+        val pointerCoords = Array(keptPointers.size) { i ->
+            MotionEvent.PointerCoords().also { ev.getPointerCoords(keptPointers[i], it) }
+        }
+        return MotionEvent.obtain(
+            ev.downTime, ev.eventTime, action, keptPointers.size, pointerProperties, pointerCoords,
+            ev.metaState, ev.buttonState, ev.xPrecision, ev.yPrecision,
+            ev.deviceId, ev.edgeFlags, ev.source, ev.flags
+        )
+    }
+
     private fun updateVisibility() {
+        // A component that is about to be hidden must not leave any of its inputs pressed
+        tataconHandler?.release()
         val currentConnectedControllersState = connectedControllersState
         var hiddenComponents = when(currentRuntimeLayout?.softInputBehaviour) {
             SoftInputBehaviour.ALWAYS_VISIBLE -> emptyList()
@@ -237,6 +351,30 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
         visibleComponents.forEach { component ->
             if (!component.isScreen()) {
                 getLayoutComponentView(component)?.view?.isVisible = true
+            }
+        }
+    }
+
+    /** Toggles the visibility of the TaTaCon drum overlay when the TaTaCon hotkey is pressed. */
+    private fun toggleTataconVisibility() {
+        val drumView = getLayoutComponentView(LayoutComponent.TATACON)?.view
+        val isCurrentlyVisible = drumView?.isVisible ?: false
+        drumView?.isVisible = !isCurrentlyVisible
+
+        if (isCurrentlyVisible) {
+            // Hiding the drum: stop tracking its input
+            tataconHandler?.release()
+            tataconHandler = null
+        } else {
+            // Showing the drum again: re-create its input handler
+            systemInputHandler?.let { inputListener ->
+                if (tataconHandler == null && drumView is TataconView) {
+                    tataconHandler = TataconInputHandler(
+                        inputListener,
+                        currentRuntimeLayout?.isHapticFeedbackEnabled ?: false,
+                        touchVibrator
+                    )
+                }
             }
         }
     }

@@ -15,6 +15,7 @@ class EditorLayoutComponentViewBuilderFactory : LayoutComponentViewBuilderFactor
                 LayoutComponent.BOTTOM_SCREEN -> BottomScreenLayoutComponentViewBuilder()
                 LayoutComponent.HYBRID_SCREEN -> HybridScreenLayoutComponentViewBuilder()
                 LayoutComponent.SLOT2_ANALOG -> EditorBackgroundLayoutComponentViewBuilder(Slot2AnalogLayoutComponentViewBuilder())
+                LayoutComponent.TATACON -> EditorBackgroundLayoutComponentViewBuilder(TataconLayoutComponentViewBuilder())
                 LayoutComponent.DPAD -> EditorBackgroundLayoutComponentViewBuilder(DpadLayoutComponentViewBuilder())
                 LayoutComponent.BUTTONS -> EditorBackgroundLayoutComponentViewBuilder(ButtonsLayoutComponentViewBuilder())
                 else -> EditorBackgroundLayoutComponentViewBuilder(SingleButtonLayoutComponentViewBuilder(layoutComponent))

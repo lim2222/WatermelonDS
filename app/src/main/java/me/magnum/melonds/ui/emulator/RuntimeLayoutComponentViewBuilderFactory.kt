@@ -17,11 +17,13 @@ class RuntimeLayoutComponentViewBuilderFactory : LayoutComponentViewBuilderFacto
                 LayoutComponent.BOTTOM_SCREEN -> RuntimeScreenLayoutComponentViewBuilder()
                 LayoutComponent.HYBRID_SCREEN -> RuntimeScreenLayoutComponentViewBuilder(256f / (192f * 2f))
                 LayoutComponent.SLOT2_ANALOG -> Slot2AnalogLayoutComponentViewBuilder()
+                LayoutComponent.TATACON -> TataconLayoutComponentViewBuilder()
                 LayoutComponent.DPAD -> DpadLayoutComponentViewBuilder()
                 LayoutComponent.BUTTONS -> ButtonsLayoutComponentViewBuilder()
                 LayoutComponent.BUTTON_FAST_FORWARD_TOGGLE,
                 LayoutComponent.BUTTON_MICROPHONE_TOGGLE,
                 LayoutComponent.BUTTON_TOGGLE_SOFT_INPUT -> ToggleableSingleButtonLayoutComponentViewBuilder(layoutComponent)
+                LayoutComponent.TATACON_BUTTON -> TaikoButtonLayoutComponentViewBuilder()
                 else -> SingleButtonLayoutComponentViewBuilder(layoutComponent)
             }
 

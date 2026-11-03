@@ -26,7 +26,9 @@ enum class LayoutComponent(val matchingInputs: List<Input>) {
     BUTTON_B(listOf(Input.B)),
     BUTTON_X(listOf(Input.X)),
     BUTTON_Y(listOf(Input.Y)),
-    SLOT2_ANALOG(emptyList());
+    SLOT2_ANALOG(emptyList()),
+    TATACON(listOf(Input.LEFT, Input.RIGHT, Input.A, Input.B, Input.L, Input.R)),
+    TATACON_BUTTON(listOf(Input.TAIKO));
 
     fun isScreen(): Boolean {
         return this == TOP_SCREEN || this == BOTTOM_SCREEN || this == HYBRID_SCREEN
