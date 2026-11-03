@@ -31,11 +31,11 @@ class GitHubProdUpdatesRepository(
     }
 
     override suspend fun checkNewUpdate(): Result<AppUpdate?> {
-        if (!shouldCheckUpdates()) {
-            return Result.success(null)
-        }
+        // Update checking disabled for this fork
+        return Result.success(null)
+    }
 
-        return suspendRunCatching { api.getReleases() }.suspendMapCatching { releases ->
+/*        return suspendRunCatching { api.getReleases() }.suspendMapCatching { releases ->
             updateLastUpdateCheckTime()
             val packageInfo = PackageManagerCompat.getPackageInfo(
                 context.packageManager,
@@ -74,7 +74,7 @@ class GitHubProdUpdatesRepository(
                 )
             }
         }
-    }
+    }*/
 
     override fun skipUpdate(update: AppUpdate) {
         statePreferences.edit {

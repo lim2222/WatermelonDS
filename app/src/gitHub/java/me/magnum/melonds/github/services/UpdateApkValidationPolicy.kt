@@ -18,7 +18,7 @@ enum class UpdateApkRejectionReason {
 }
 
 object UpdateApkValidationPolicy {
-    const val EXPECTED_PACKAGE = "me.magnum.melondualds"
+    const val EXPECTED_PACKAGE = "me.magnum.melondualds.taiko"
 
     fun validate(
         candidate: UpdateApkMetadata,

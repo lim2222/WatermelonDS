@@ -34,11 +34,11 @@ android {
     compileSdk = AppConfig.compileSdkVersion
     ndkVersion = AppConfig.ndkVersion
     defaultConfig {
-        applicationId = "me.magnum.melondualds"
+        applicationId = "me.magnum.melondualds.taiko"
         minSdk = AppConfig.minSdkVersion
         targetSdk = AppConfig.targetSdkVersion
         versionCode = AppConfig.versionCode
-        versionName = AppConfig.versionName
+        versionName = AppConfig.versionName + "+taiko1.0"
         manifestPlaceholders["appName"] = "@string/app_name"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -272,6 +272,15 @@ fun augmentedLibrashaderPath(): String {
 }
 
 fun resolveBuildTool(tool: String): String {
+    val props = gradleLocalProperties(rootDir, providers)
+    val localProp = (props[tool.uppercase()] as String?)?.takeIf(String::isNotBlank)?.let(::File)
+    if (localProp != null) {
+        check(localProp.isFile && localProp.canExecute()) {
+            "${tool.uppercase()} points to a non-executable file: ${localProp.absolutePath}"
+        }
+        return localProp.absolutePath
+    }
+
     val envOverride = System.getenv(tool.uppercase())
         ?.takeIf(String::isNotBlank)
         ?.let(::File)

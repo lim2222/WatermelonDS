@@ -61,6 +61,20 @@
 -keep,allowobfuscation class me.magnum.melonds.impl.dtos.**
 -keep,allowobfuscation class me.magnum.rcheevosapi.dto.**
 
+# Retrofit service interfaces are implemented by the dynamic proxy returned from
+# Retrofit.create() (Proxy.newProxyInstance), so no class in the program ever implements them.
+# R8 full mode therefore treats them as never instantiated: it strips the reflectively invoked
+# @retrofit2.http methods and rewrites the CHECKCAST of the proxy value into a guaranteed
+# `throw new ClassCastException()`, which crashes the release build as soon as the service is
+# created. Retrofit's bundled rules only keep these interfaces while an annotated method
+# survives shrinking, so keep the service interfaces explicitly (obfuscation is fine; Retrofit
+# reflects over the same Class object).
+-keep,allowobfuscation interface me.magnum.melonds.github.GitHubApi { *; }
+-if interface *
+-keepclasseswithmembers,allowobfuscation interface <1> {
+    @retrofit2.http.* <methods>;
+}
+
 # Prevent Gson's TypeToken from being removed
 -keepattributes Signature
 -keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
