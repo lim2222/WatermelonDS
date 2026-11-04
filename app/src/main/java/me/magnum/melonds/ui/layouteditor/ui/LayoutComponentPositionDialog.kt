@@ -40,7 +40,9 @@ fun LayoutComponentPositionDialog(
         positionEditorState.component,
         positionEditorState.x,
         positionEditorState.y,
+        positionEditorState.minX,
         positionEditorState.maxX,
+        positionEditorState.minY,
         positionEditorState.maxY,
     ) {
         mutableStateOf(positionEditorState.x.toString())
@@ -49,14 +51,16 @@ fun LayoutComponentPositionDialog(
         positionEditorState.component,
         positionEditorState.x,
         positionEditorState.y,
+        positionEditorState.minX,
         positionEditorState.maxX,
+        positionEditorState.minY,
         positionEditorState.maxY,
     ) {
         mutableStateOf(positionEditorState.y.toString())
     }
 
-    val xRange = 0..positionEditorState.maxX
-    val yRange = 0..positionEditorState.maxY
+    val xRange = positionEditorState.minX..positionEditorState.maxX
+    val yRange = positionEditorState.minY..positionEditorState.maxY
     val parsedX = xValueText.toIntOrNull()?.takeIf(xRange::contains)
     val parsedY = yValueText.toIntOrNull()?.takeIf(yRange::contains)
     val isXInvalid = xValueText.isNotEmpty() && parsedX == null
@@ -134,7 +138,12 @@ private fun CoordinateField(
             label = { Text(label) },
             isError = isError,
             colors = melonOutlinedTextFieldColors(),
-            keyboardOptions = KeyboardOptions(imeAction = imeAction, keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(
+                imeAction = imeAction,
+                // A number-only keyboard cannot type the minus sign, so allow text input when the
+                // range contains negative values (the TaTaCon drum may be placed off-screen).
+                keyboardType = if (range.first < 0) KeyboardType.Text else KeyboardType.Number,
+            ),
             keyboardActions = KeyboardActions(onDone = { onDone?.invoke() }),
             singleLine = true,
         )

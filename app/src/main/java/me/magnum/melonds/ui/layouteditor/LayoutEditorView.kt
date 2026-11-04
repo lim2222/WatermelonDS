@@ -262,14 +262,28 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
         })
     }
 
+    private data class PositionBounds(val minX: Int, val maxX: Int, val minY: Int, val maxY: Int)
+
+    /** The drum may leave the layout, but at most half of it, so it can never be lost off-screen. */
+    private fun positionBoundsFor(component: LayoutComponent, viewWidth: Int, viewHeight: Int): PositionBounds {
+        return if (component == LayoutComponent.TATACON) {
+            PositionBounds(-viewWidth / 2, width - viewWidth / 2, -viewHeight / 2, height - viewHeight / 2)
+        } else {
+            PositionBounds(0, max(width - viewWidth, 0), 0, max(height - viewHeight, 0))
+        }
+    }
+
     private fun buildPositionEditorState(view: LayoutComponentView): LayoutComponentPositionEditorState {
         val position = view.getPosition()
+        val bounds = positionBoundsFor(view.component, view.getWidth(), view.getHeight())
         return LayoutComponentPositionEditorState(
             component = view.component,
             x = position.x,
             y = position.y,
-            maxX = max(width - view.getWidth(), 0),
-            maxY = max(height - view.getHeight(), 0),
+            minX = bounds.minX,
+            maxX = bounds.maxX,
+            minY = bounds.minY,
+            maxY = bounds.maxY,
         )
     }
 
@@ -317,8 +331,18 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
 
     private fun dragView(view: LayoutComponentView, offsetX: Float, offsetY: Float) {
         val currentPosition = view.getPosition()
-        val finalX = min(max(currentPosition.x + offsetX, 0f), width - view.getWidth().toFloat())
-        val finalY = min(max(currentPosition.y + offsetY, 0f), height - view.getHeight().toFloat())
+        val finalX: Float
+        val finalY: Float
+        if (view.component == LayoutComponent.TATACON) {
+            val bounds = positionBoundsFor(view.component, view.getWidth(), view.getHeight())
+            finalX = (currentPosition.x + offsetX).coerceIn(bounds.minX.toFloat(), bounds.maxX.toFloat())
+            finalY = (currentPosition.y + offsetY).coerceIn(bounds.minY.toFloat(), bounds.maxY.toFloat())
+        } else {
+            // Keep the original clamping for regular components, including the case where the
+            // component is larger than the layout (the upper bound can then be negative).
+            finalX = min(max(currentPosition.x + offsetX, 0f), width - view.getWidth().toFloat())
+            finalY = min(max(currentPosition.y + offsetY, 0f), height - view.getHeight().toFloat())
+        }
         view.setPosition(Point(finalX.toInt(), finalY.toInt()))
         modifiedByUser = true
         notifyLayoutChanged()
@@ -356,8 +380,16 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
 
     fun setComponentPosition(component: LayoutComponent, x: Int, y: Int): Boolean {
         val view = views[component] ?: return false
-        val boundedX = x.coerceIn(0, max(width - view.getWidth(), 0))
-        val boundedY = y.coerceIn(0, max(height - view.getHeight(), 0))
+        val boundedX: Int
+        val boundedY: Int
+        if (component == LayoutComponent.TATACON) {
+            val bounds = positionBoundsFor(component, view.getWidth(), view.getHeight())
+            boundedX = x.coerceIn(bounds.minX, bounds.maxX)
+            boundedY = y.coerceIn(bounds.minY, bounds.maxY)
+        } else {
+            boundedX = x.coerceIn(0, max(width - view.getWidth(), 0))
+            boundedY = y.coerceIn(0, max(height - view.getHeight(), 0))
+        }
         view.setPosition(Point(boundedX, boundedY))
         modifiedByUser = true
         notifyLayoutChanged()
