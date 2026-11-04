@@ -98,7 +98,7 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
     fun selectComponent(component: LayoutComponent): Boolean {
         val componentView = views[component] ?: return false
         selectView(componentView)
-        componentView.view.alpha = 1f
+        componentView.view.alpha = if (componentView.hasCustomAlpha) componentView.baseAlpha else 1f
         componentView.setHighlighted(true)
         return true
     }
@@ -118,7 +118,14 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
 
     fun buildCurrentLayout(): List<PositionedLayoutComponent> {
         return views.values.map {
-            PositionedLayoutComponent(it.getRect(), it.component, it.baseAlpha, it.onTop, it.buttonMode)
+            PositionedLayoutComponent(
+                rect = it.getRect(),
+                component = it.component,
+                alpha = it.baseAlpha,
+                onTop = it.onTop,
+                buttonMode = it.buttonMode,
+                hasCustomAlpha = it.hasCustomAlpha,
+            )
         }
     }
 
@@ -158,11 +165,11 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
         val next = ordered[nextIndex]
 
         selectedView?.takeIf { it != next }?.let {
-            it.view.alpha = 0.5f
+            it.view.alpha = if (it.hasCustomAlpha) it.baseAlpha else 0.5f
             it.setHighlighted(false)
         }
         selectView(next)
-        next.view.alpha = 1f
+        next.view.alpha = if (next.hasCustomAlpha) next.baseAlpha else 1f
         next.setHighlighted(true)
         return true
     }
@@ -234,7 +241,7 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
                     MotionEvent.ACTION_CANCEL -> {
                         gestureDetector.onTouchEvent(motionEvent)
                         if (dragging) {
-                            view.alpha = 0.5f
+                            view.alpha = if (layoutComponentView.hasCustomAlpha) layoutComponentView.baseAlpha else 0.5f
                             layoutComponentView.setHighlighted(false)
                             dragging = false
                         }
@@ -247,7 +254,7 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
                             false
                         }
                         if (dragging) {
-                            view.alpha = 0.5f
+                            view.alpha = if (layoutComponentView.hasCustomAlpha) layoutComponentView.baseAlpha else 0.5f
                             layoutComponentView.setHighlighted(false)
                             dragging = false
                         } else if (!gestureHandled) {
@@ -313,7 +320,7 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
 
     private fun deselectCurrentView() {
         selectedView?.let {
-            it.view.alpha = 0.5f
+            it.view.alpha = if (it.hasCustomAlpha) it.baseAlpha else 0.5f
             it.setHighlighted(false)
             onViewDeselectedListener?.invoke(it)
         }
@@ -351,6 +358,9 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
     fun setSelectedViewAlpha(alpha: Float) {
         selectedView?.let {
             it.baseAlpha = alpha
+            it.hasCustomAlpha = true
+            // Apply immediately so the user can see alpha change as they drag, before Save & Exit
+            it.view.alpha = alpha
             modifiedByUser = true
             notifyLayoutChanged()
         }
@@ -529,7 +539,7 @@ class LayoutEditorView(context: Context, attrs: AttributeSet?) : LayoutView(cont
     fun releaseComponentEdit(component: LayoutComponent?) {
         val componentView = component?.let { views[it] }
         if (componentView != null && componentView != selectedView) {
-            componentView.view.alpha = 0.5f
+            componentView.view.alpha = if (componentView.hasCustomAlpha) componentView.baseAlpha else 0.5f
             componentView.setHighlighted(false)
             onViewDeselectedListener?.invoke(componentView)
         }

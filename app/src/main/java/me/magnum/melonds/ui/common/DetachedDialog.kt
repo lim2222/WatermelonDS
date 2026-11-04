@@ -182,8 +182,8 @@ private class DetachedDialogLayout(
 
     private fun createLayoutParams(): WindowManager.LayoutParams =
         WindowManager.LayoutParams().apply {
-            flags = WindowManager.LayoutParams.FLAG_DIM_BEHIND or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-            dimAmount = 0.6f
+            flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            dimAmount = 0f
             windowAnimations = android.R.style.Animation_Dialog
             type = WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG
             token = composeView.applicationWindowToken

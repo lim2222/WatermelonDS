@@ -114,6 +114,8 @@
                 app:layout_constraintTop_toTopOf="@id/layout_size_labels"
                 app:layout_constraintBottom_toBottomOf="@id/layout_size_labels"
                 android:padding="8dp"
+                android:progressTint="#FFFFFF"
+                android:thumbTint="#FFFFFF"
                 android:layout_gravity="center_vertical" />
 
             <LinearLayout
@@ -153,7 +155,7 @@
                 android:text="@string/button_mode"
                 android:textColor="@color/textLayoutEditor"
                 android:background="?attr/selectableItemBackground"
-                app:layout_constraintTop_toBottomOf="@id/layout_size_labels"
+                app:layout_constraintTop_toBottomOf="@id/layout_alpha_labels"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -166,6 +168,8 @@
                 app:layout_constraintTop_toTopOf="@id/layout_width_labels"
                 app:layout_constraintBottom_toBottomOf="@id/layout_width_labels"
                 android:padding="8dp"
+                android:progressTint="#FFFFFF"
+                android:thumbTint="#FFFFFF"
                 android:layout_gravity="center_vertical" />
 
             <LinearLayout
@@ -206,6 +210,8 @@
                 app:layout_constraintTop_toTopOf="@id/layout_height_labels"
                 app:layout_constraintBottom_toBottomOf="@id/layout_height_labels"
                 android:padding="8dp"
+                android:progressTint="#FFFFFF"
+                android:thumbTint="#FFFFFF"
                 android:layout_gravity="center_vertical" />
 
             <LinearLayout
@@ -236,6 +242,8 @@
                 app:layout_constraintBottom_toBottomOf="@id/layout_alpha_labels"
                 android:padding="8dp"
                 android:max="100"
+                android:progressTint="#FFFFFF"
+                android:thumbTint="#FFFFFF"
                 android:layout_gravity="center_vertical" />
 
             <androidx.constraintlayout.widget.Barrier

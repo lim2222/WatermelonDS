@@ -288,6 +288,13 @@ class LayoutEditorManagerView(
                 LayoutComponent.BOTTOM_SCREEN -> bottomAspectRatio
                 else -> ScreenAspectRatio.UNRESTRICTED
             }
+            val selectedAlpha = if (view.component.isScreen() || view.hasCustomAlpha) {
+                view.baseAlpha
+            } else {
+                // For components that still follow the global opacity, show the value that is
+                // actually in effect so it can be adjusted from there (including up to 100%).
+                viewModel.getEffectiveInputOpacity() / 100f
+            }
             showScalingControls(
                 widthScale,
                 heightScale,
@@ -295,7 +302,7 @@ class LayoutEditorManagerView(
                 maxHeight,
                 minSize,
                 selectedViewIsScreen,
-                view.baseAlpha,
+                selectedAlpha,
                 view.onTop,
             )
         }
@@ -918,8 +925,8 @@ class LayoutEditorManagerView(
         binding.seekBarWidth.isVisible = isScreen
         binding.layoutHeightLabels.isVisible = isScreen
         binding.seekBarHeight.isVisible = isScreen
-        binding.layoutAlphaLabels.isVisible = isScreen
-        binding.seekBarAlpha.isVisible = isScreen
+        binding.layoutAlphaLabels.isVisible = true
+        binding.seekBarAlpha.isVisible = true
         binding.layoutAspectRatio.isVisible = selectedViewSupportsAspectRatio
         binding.checkboxAboveScreen.isVisible = isScreen
         binding.buttonCenterHorizontal.isVisible = isScreen
@@ -1040,6 +1047,10 @@ class LayoutEditorManagerView(
         dialog.window?.apply {
             setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
             attributes.token = this@LayoutEditorManagerView.windowToken
+            // Do not dim the layout editor behind the dialog, so the user can still see
+            // buttons/screens and the alpha effect they are tweaking.
+            clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            attributes.dimAmount = 0f
         }
         dialog.show()
         return dialog

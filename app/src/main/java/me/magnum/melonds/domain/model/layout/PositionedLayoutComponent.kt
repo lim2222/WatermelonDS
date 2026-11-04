@@ -8,6 +8,11 @@ data class PositionedLayoutComponent(
     val alpha: Float = 1f,
     val onTop: Boolean = false,
     val buttonMode: VirtualButtonMode = VirtualButtonMode.NORMAL,
+    /**
+     * Whether [alpha] was explicitly set by the user for this component. When false, non-screen
+     * components keep following the global soft input opacity.
+     */
+    val hasCustomAlpha: Boolean = false,
 ) {
 
     fun isScreen(): Boolean {

@@ -18,6 +18,9 @@ class LayoutComponentView(val view: View, val aspectRatio: Float, val component:
     var onTop: Boolean = false
     var buttonMode: VirtualButtonMode = VirtualButtonMode.NORMAL
 
+    /** Whether [baseAlpha] was explicitly chosen instead of following the global soft input opacity. */
+    var hasCustomAlpha: Boolean = false
+
     fun setPosition(position: Point) {
         view.updateLayoutParams<FrameLayout.LayoutParams> {
             leftMargin = position.x

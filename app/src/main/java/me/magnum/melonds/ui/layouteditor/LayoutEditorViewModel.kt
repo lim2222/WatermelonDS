@@ -58,6 +58,8 @@ class LayoutEditorViewModel @Inject constructor(
     private val _currentLayout = MutableStateFlow<CurrentLayoutState?>(null)
     val currentLayout = _currentLayout.asStateFlow()
 
+    private val _softInputOpacity = MutableStateFlow(50)
+
     private val _mainScreenBackgroundProperties = MutableStateFlow<LayoutBackgroundProperties?>(null)
     val mainScreenBackgroundProperties by lazy {
         viewModelScope.launch {
@@ -97,6 +99,12 @@ class LayoutEditorViewModel @Inject constructor(
         viewModelScope.launch {
             _currentLayoutConfiguration.filterNotNull().collect {
                 uiLayoutProvider.setCurrentLayoutConfiguration(it)
+            }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getSoftInputOpacity().collect {
+                _softInputOpacity.value = it
             }
         }
 
@@ -148,6 +156,19 @@ class LayoutEditorViewModel @Inject constructor(
 
     fun shouldIgnoreDisplayCutoutInLayouts(): Boolean {
         return settingsRepository.shouldIgnoreDisplayCutoutInLayouts()
+    }
+
+    /**
+     * The opacity that non-screen components use when they were not customized, which is the
+     * layout's own opacity if it overrides it, or the global soft input opacity otherwise.
+     */
+    fun getEffectiveInputOpacity(): Int {
+        val layoutConfiguration = _currentLayoutConfiguration.value
+        return if (layoutConfiguration?.useCustomOpacity == true) {
+            layoutConfiguration.opacity
+        } else {
+            _softInputOpacity.value
+        }
     }
 
     fun setScreenFolds(folds: List<ScreenFold>) {

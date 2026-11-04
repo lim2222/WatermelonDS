@@ -175,9 +175,9 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
 
         getLayoutComponentViews().forEach {
             if (!it.component.isScreen()) {
-                it.view.apply {
-                    alpha = inputAlpha
-                }
+                // A component whose alpha was customized in the layout editor keeps its own
+                // opacity; the rest keep following the global soft input opacity.
+                it.view.alpha = if (it.hasCustomAlpha) it.baseAlpha else inputAlpha
             }
         }
 

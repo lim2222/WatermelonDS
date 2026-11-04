@@ -16,6 +16,8 @@ data class PositionedLayoutComponentDto(
     val onTop: Boolean? = null,
     @SerializedName("buttonMode")
     val buttonMode: String? = null,
+    @SerializedName("hasCustomAlpha")
+    val hasCustomAlpha: Boolean? = null,
 ) {
 
     companion object {
@@ -26,6 +28,7 @@ data class PositionedLayoutComponentDto(
                 positionedLayoutComponent.alpha,
                 positionedLayoutComponent.onTop,
                 positionedLayoutComponent.buttonMode.takeUnless { it == VirtualButtonMode.NORMAL }?.name,
+                positionedLayoutComponent.hasCustomAlpha.takeIf { it },
             )
         }
     }
@@ -37,6 +40,7 @@ data class PositionedLayoutComponentDto(
             alpha ?: 1f,
             onTop ?: false,
             VirtualButtonMode.entries.firstOrNull { it.name.equals(buttonMode, ignoreCase = true) } ?: VirtualButtonMode.NORMAL,
+            hasCustomAlpha ?: false,
         )
     }
 }
