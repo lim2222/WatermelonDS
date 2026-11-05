@@ -23,6 +23,7 @@ class TataconInputHandler(
 ) : FeedbackInputHandler(inputListener, enableHapticFeedback, touchVibrator) {
 
     companion object {
+        private const val BIG_HIT_ENABLED = true
         private const val HAPTIC_DEBOUNCE_MS = 35L
         private const val HAPTIC_RAPID_WINDOW_MS = 85L
         private const val BIG_HIT_PAIR_WINDOW_MS = 25L
@@ -166,7 +167,7 @@ class TataconInputHandler(
         if (!enableHapticFeedback || !touchVibrator.supportsVibration()) return
 
         val prev = lastHitRegion
-        val isBigPair = prev != null &&
+        val isBigPair = BIG_HIT_ENABLED && prev != null &&
             eventTime - lastHitTime in 0..BIG_HIT_PAIR_WINDOW_MS &&
             prev.isLeftSide != region.isLeftSide &&
             prev.isHead == region.isHead &&
