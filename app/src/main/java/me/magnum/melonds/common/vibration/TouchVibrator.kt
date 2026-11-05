@@ -33,4 +33,10 @@ class TouchVibrator(private val delegate: VibratorDelegate, private val settings
         }
         delegate.vibrate(duration, vibrationStrength.coerceIn(1, 255))
     }
+
+    fun getTouchHapticFeedbackStrength(): Int = settingsRepository.getTouchHapticFeedbackStrength()
+
+    fun vibrate(duration: Int, amplitude: Int) {
+        delegate.vibrate(duration, amplitude.coerceIn(1, 255))
+    }
 }

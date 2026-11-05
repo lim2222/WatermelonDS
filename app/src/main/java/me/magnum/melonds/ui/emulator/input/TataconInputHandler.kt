@@ -1,5 +1,6 @@
 package me.magnum.melonds.ui.emulator.input
 
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import me.magnum.melonds.common.vibration.TouchVibrator
@@ -21,6 +22,13 @@ class TataconInputHandler(
     enableHapticFeedback: Boolean,
     touchVibrator: TouchVibrator,
 ) : FeedbackInputHandler(inputListener, enableHapticFeedback, touchVibrator) {
+
+    companion object {
+        private const val HAPTIC_DEBOUNCE_MS = 35L
+        private const val HAPTIC_RAPID_WINDOW_MS = 85L
+    }
+
+    private var lastHapticTime = 0L
 
     // Region currently struck by each pointer. Several pointers may strike the same region; the key
     // is only pressed while at least one pointer holds it.
@@ -133,7 +141,26 @@ class TataconInputHandler(
         inputListener.onKeyPress(region.input)
         drumView?.let {
             it.setRegionPressed(region, true)
-            performHapticFeedback(it, HapticFeedbackType.KEY_PRESS)
+            triggerTaTaConHapticFeedback()
+        }
+    }
+
+    /**
+     * Same behaviour as the Azahar overlay: hits inside the debounce window are ignored so a second
+     * finger does not cancel the running vibration; rapid hits get a softer, shorter pulse.
+     */
+    private fun triggerTaTaConHapticFeedback() {
+        if (!enableHapticFeedback || !touchVibrator.supportsVibration()) return
+
+        val now = SystemClock.uptimeMillis()
+        val delta = now - lastHapticTime
+        if (delta < HAPTIC_DEBOUNCE_MS) return
+        lastHapticTime = now // only updated for hits that pass the debounce
+
+        if (delta < HAPTIC_RAPID_WINDOW_MS) {
+            touchVibrator.vibrate(65, 84)
+        } else {
+            touchVibrator.vibrate(85, 255)
         }
     }
 
@@ -144,9 +171,6 @@ class TataconInputHandler(
         if (regionPointerCount[region.ordinal] != 0) return
 
         inputListener.onKeyReleased(region.input)
-        drumView?.let {
-            it.setRegionPressed(region, false)
-            performHapticFeedback(it, HapticFeedbackType.KEY_RELEASE)
-        }
+        drumView?.setRegionPressed(region, false)
     }
 }
