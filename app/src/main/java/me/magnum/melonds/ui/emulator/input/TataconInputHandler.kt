@@ -1,6 +1,5 @@
 package me.magnum.melonds.ui.emulator.input
 
-import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import me.magnum.melonds.common.vibration.TouchVibrator
@@ -26,9 +25,15 @@ class TataconInputHandler(
     companion object {
         private const val HAPTIC_DEBOUNCE_MS = 35L
         private const val HAPTIC_RAPID_WINDOW_MS = 85L
+        private const val BIG_HIT_PAIR_WINDOW_MS = 25L
+        private const val BIG_HIT_QUIET_BEFORE_MS = 110L
     }
 
-    private var lastHapticTime = 0L
+    private var lastHapticTime = 0L // last vibration actually fired
+    private var prevHitTime = 0L // the hit before lastHitTime
+    private var lastHitTime = 0L // last hit, even if its vibration was debounced
+    private var lastHitRegion: TataconRegion? = null
+    private var lastPairWasBig = false
 
     // Region currently struck by each pointer. Several pointers may strike the same region; the key
     // is only pressed while at least one pointer holds it.
@@ -66,7 +71,7 @@ class TataconInputHandler(
                 val region = regionAt(event.getX(index), event.getY(index), drum, isBlockedByOtherComponent)
                 if (region != null) {
                     val pointerId = event.getPointerId(index)
-                    strike(pointerId, region)
+                    strike(pointerId, region, event.eventTime)
                     owned.add(pointerId)
                 }
             }
@@ -78,7 +83,7 @@ class TataconInputHandler(
                     val region = regionAt(event.getX(i), event.getY(i), drum, null) ?: continue
                     if (region != currentRegion) {
                         lift(pointerId)
-                        strike(pointerId, region)
+                        strike(pointerId, region, event.eventTime)
                     }
                 }
             }
@@ -131,7 +136,7 @@ class TataconInputHandler(
         return region
     }
 
-    private fun strike(pointerId: Int, region: TataconRegion) {
+    private fun strike(pointerId: Int, region: TataconRegion, eventTime: Long) {
         pointerRegions[pointerId] = region
         val isFirstPointer = regionPointerCount[region.ordinal] == 0
         regionPointerCount[region.ordinal]++
@@ -141,21 +146,48 @@ class TataconInputHandler(
         inputListener.onKeyPress(region.input)
         drumView?.let {
             it.setRegionPressed(region, true)
-            triggerTaTaConHapticFeedback()
+            triggerTaTaConHapticFeedback(region, eventTime)
         }
     }
 
     /**
-     * Same behaviour as the Azahar overlay: hits inside the debounce window are ignored so a second
-     * finger does not cancel the running vibration; rapid hits get a softer, shorter pulse.
+     * The first hit always vibrates immediately; there is no buffering to wait for a possible second
+     * hit, which would make the feedback feel sluggish.
+     *
+     * A big note is two fingers landing at practically the same time on opposite sides of the same
+     * kind of region (head with head, rim with rim), after a moment of silence. It gets a longer,
+     * heavier pulse that replaces the first hit's vibration; both start at full amplitude, so the
+     * replacement is seamless.
+     *
+     * [eventTime] comes from [MotionEvent.getEventTime], so timing is not affected by main thread
+     * jitter.
      */
-    private fun triggerTaTaConHapticFeedback() {
+    private fun triggerTaTaConHapticFeedback(region: TataconRegion, eventTime: Long) {
         if (!enableHapticFeedback || !touchVibrator.supportsVibration()) return
 
-        val now = SystemClock.uptimeMillis()
-        val delta = now - lastHapticTime
+        val prev = lastHitRegion
+        val isBigPair = prev != null &&
+            eventTime - lastHitTime in 0..BIG_HIT_PAIR_WINDOW_MS &&
+            prev.isLeftSide != region.isLeftSide &&
+            prev.isHead == region.isHead &&
+            !lastPairWasBig &&
+            lastHitTime - prevHitTime >= BIG_HIT_QUIET_BEFORE_MS
+
+        prevHitTime = lastHitTime
+        lastHitTime = eventTime
+        lastHitRegion = region
+        lastPairWasBig = isBigPair
+
+        if (isBigPair) {
+            // Bypasses the debounce on purpose; replaces the first hit's pulse
+            lastHapticTime = eventTime
+            touchVibrator.vibrate(130, 255)
+            return
+        }
+
+        val delta = eventTime - lastHapticTime
         if (delta < HAPTIC_DEBOUNCE_MS) return
-        lastHapticTime = now // only updated for hits that pass the debounce
+        lastHapticTime = eventTime // only updated for hits that pass the debounce
 
         if (delta < HAPTIC_RAPID_WINDOW_MS) {
             touchVibrator.vibrate(65, 84)
@@ -174,3 +206,6 @@ class TataconInputHandler(
         drumView?.setRegionPressed(region, false)
     }
 }
+
+private val TataconRegion.isLeftSide: Boolean
+    get() = this == TataconRegion.HEAD_UP_LEFT || this == TataconRegion.HEAD_DOWN_LEFT || this == TataconRegion.RIM_LEFT
