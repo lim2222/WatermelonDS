@@ -401,6 +401,15 @@ class EmulatorActivity : AppCompatActivity() {
         }
         onReturnedFromRomSettingsActivity()
     }
+    private val quickLayoutSelectorLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val layoutId = result.data
+                ?.getStringExtra(LayoutSelectorActivity.KEY_SELECTED_LAYOUT_ID)
+                ?.let { UUID.fromString(it) }
+            viewModel.onQuickLayoutSelected(layoutId)
+        }
+        onReturnedFromRomSettingsActivity()
+    }
     private val cheatsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.onCheatsChanged()
         viewModel.resumeEmulator()
@@ -772,18 +781,23 @@ class EmulatorActivity : AppCompatActivity() {
                             rom = currentRom,
                             achievementsSummary = null,
                             onOptionSelected = { option ->
-                                val isTerminal = option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.RESET ||
-                                    option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.EXIT ||
-                                    option == me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption.RESET ||
-                                    option == me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption.EXIT
-                                val isViewOverlay = option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.REWIND
-                                if (isTerminal) {
+                                if (option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.LAYOUT) {
                                     dismissPauseMenu()
-                                } else if (isViewOverlay) {
-                                    pauseMenuState.value = null
-                                    rewindOpenedFromPauseMenu = true
+                                    openQuickRomLayoutSelector()
+                                } else {
+                                    val isTerminal = option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.RESET ||
+                                        option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.EXIT ||
+                                        option == me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption.RESET ||
+                                        option == me.magnum.melonds.ui.emulator.firmware.FirmwarePauseMenuOption.EXIT
+                                    val isViewOverlay = option == me.magnum.melonds.ui.emulator.rom.RomPauseMenuOption.REWIND
+                                    if (isTerminal) {
+                                        dismissPauseMenu()
+                                    } else if (isViewOverlay) {
+                                        pauseMenuState.value = null
+                                        rewindOpenedFromPauseMenu = true
+                                    }
+                                    viewModel.onPauseMenuOptionSelected(option)
                                 }
-                                viewModel.onPauseMenuOptionSelected(option)
                             },
                             onResume = {
                                 dismissPauseMenu()
@@ -2290,6 +2304,13 @@ class EmulatorActivity : AppCompatActivity() {
             pauseMenuState.value = null
             activeOverlays.removeActiveOverlay(EmulatorOverlay.PAUSE_MENU)
         }
+    }
+
+    private fun openQuickRomLayoutSelector() {
+        val intent = Intent(this, LayoutSelectorActivity::class.java).apply {
+            putExtra(LayoutSelectorActivity.KEY_SELECTED_LAYOUT_ID, viewModel.getQuickLayoutSelectionId()?.toString())
+        }
+        quickLayoutSelectorLauncher.launch(intent)
     }
 
     private fun showRomSettingsMenu(

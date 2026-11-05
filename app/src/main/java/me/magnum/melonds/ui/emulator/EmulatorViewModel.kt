@@ -435,6 +435,7 @@ class EmulatorViewModel @Inject constructor(
     val emulatorState = _emulatorState.asStateFlow()
 
     private val _layout = MutableStateFlow<LayoutConfiguration?>(null)
+    private val _temporaryLayoutId = MutableStateFlow<UUID?>(null)
 
     private val _currentLayout = uiLayoutProvider.currentLayout.shareIn(viewModelScope, SharingStarted.Lazily)
 
@@ -1661,7 +1662,19 @@ class EmulatorViewModel @Inject constructor(
     }
 
     fun onRunningRomLayoutSelected(layoutId: UUID?) {
+        _temporaryLayoutId.value = null
         updateRunningRomConfig(updateNativeConfiguration = false) { it.copy(layoutId = layoutId) }
+    }
+
+    /** Switches the layout for the current session only, without changing the game's saved layout. */
+    fun onQuickLayoutSelected(layoutId: UUID?) {
+        _temporaryLayoutId.value = layoutId
+    }
+
+    /** The layout currently shown in the quick picker: a temporary choice, or the game's saved layout. */
+    fun getQuickLayoutSelectionId(): UUID? {
+        return _temporaryLayoutId.value
+            ?: (_emulatorState.value as? EmulatorState.RunningRom)?.rom?.config?.layoutId
     }
 
     fun onRunningRomMicSourceSelected(micSource: RuntimeMicSource) {
@@ -2139,6 +2152,7 @@ class EmulatorViewModel @Inject constructor(
                             }
                         }
                     }
+                    RomPauseMenuOption.LAYOUT -> Unit
                     RomPauseMenuOption.SAVE_STATE -> {
                         if (emulatorSession.areSaveStatesAllowed()) {
                             (_emulatorState.value as? EmulatorState.RunningRom)?.let {
@@ -2771,6 +2785,7 @@ class EmulatorViewModel @Inject constructor(
         _mainScreenBackground.value = RuntimeBackground.None
         _secondaryScreenBackground.value = RuntimeBackground.None
         _layout.value = null
+        _temporaryLayoutId.value = null
         currentRom = null
         lastEndpointRestartNoticeGeneration = null
         activeRomConfig.value = null
@@ -2928,12 +2943,13 @@ class EmulatorViewModel @Inject constructor(
     private fun startObservingLayoutForRom() {
         sessionCoroutineScope.launch {
             combine(
-                activeRomConfig.flatMapLatest { rom ->
-                    val romLayoutId = rom?.config?.layoutId
-                    if (romLayoutId == null) {
+                combine(activeRomConfig, _temporaryLayoutId) { rom, temporaryLayoutId ->
+                    temporaryLayoutId ?: rom?.config?.layoutId
+                }.flatMapLatest { layoutId ->
+                    if (layoutId == null) {
                         getGlobalLayoutFlow()
                     } else {
-                        layoutsRepository.observeLayout(romLayoutId)
+                        layoutsRepository.observeLayout(layoutId)
                             .onCompletion {
                                 emitAll(getGlobalLayoutFlow())
                             }
@@ -6415,6 +6431,7 @@ class EmulatorViewModel @Inject constructor(
     private fun filterRomPauseMenuOption(option: RomPauseMenuOption, rendererDebugToolsEnabled: Boolean): Boolean {
         return when (option) {
             RomPauseMenuOption.ROM_SETTINGS -> _emulatorState.value is EmulatorState.RunningRom
+            RomPauseMenuOption.LAYOUT -> _emulatorState.value is EmulatorState.RunningRom
             RomPauseMenuOption.SAVE_STATE -> emulatorSession.areSaveStatesAllowed()
             RomPauseMenuOption.REWIND -> settingsRepository.isRewindEnabled() && emulatorSession.areSaveStateLoadsAllowed()
             RomPauseMenuOption.LOAD_STATE -> emulatorSession.areSaveStateLoadsAllowed()

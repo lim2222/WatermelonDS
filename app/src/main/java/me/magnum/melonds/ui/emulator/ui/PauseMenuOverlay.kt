@@ -92,6 +92,7 @@ private fun optionIcon(option: PauseMenuOption): ImageVector {
         is RomPauseMenuOption -> when (option) {
             RomPauseMenuOption.SETTINGS -> Icons.Filled.Settings
             RomPauseMenuOption.ROM_SETTINGS -> Icons.Filled.Tune
+            RomPauseMenuOption.LAYOUT -> Icons.Filled.SportsEsports
             RomPauseMenuOption.SAVE_STATE -> Icons.Filled.Save
             RomPauseMenuOption.LOAD_STATE -> Icons.Filled.FileDownload
             RomPauseMenuOption.REWIND -> Icons.Filled.FastRewind
