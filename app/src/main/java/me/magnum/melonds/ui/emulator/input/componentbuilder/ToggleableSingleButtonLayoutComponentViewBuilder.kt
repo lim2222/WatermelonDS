@@ -11,20 +11,34 @@ class ToggleableSingleButtonLayoutComponentViewBuilder(private val layoutCompone
 
     override fun build(context: Context): View {
         return ToggleableImageView(context).apply {
-            val drawables = getToggleableImageViewDrawables()
-            enabledDrawable = drawables.first
-            disabledDrawable = drawables.second
+            getToggleableImageViewDrawables()?.let { drawables ->
+                setDrawables(drawables.enabled, drawables.enabledPressed, drawables.disabled)
+            }
         }
     }
 
     override fun getAspectRatio() = 1f
 
-    private fun getToggleableImageViewDrawables(): Pair<Int?, Int?> {
+    private fun getToggleableImageViewDrawables(): ToggleDrawables? {
         return when (layoutComponent) {
-            LayoutComponent.BUTTON_FAST_FORWARD_TOGGLE -> R.drawable.button_fast_forward to R.drawable.button_fast_forward_disabled
-            LayoutComponent.BUTTON_MICROPHONE_TOGGLE -> R.drawable.button_microphone to R.drawable.button_microphone_disabled
-            LayoutComponent.BUTTON_TOGGLE_SOFT_INPUT -> R.drawable.ic_touch_enabled to R.drawable.ic_touch_disabled
-            else -> null to null
+            LayoutComponent.BUTTON_FAST_FORWARD_TOGGLE -> ToggleDrawables(
+                R.drawable.button_fast_forward,
+                null,
+                R.drawable.button_fast_forward_disabled,
+            )
+            LayoutComponent.BUTTON_MICROPHONE_TOGGLE -> ToggleDrawables(
+                R.drawable.button_microphone,
+                null,
+                R.drawable.button_microphone_disabled,
+            )
+            LayoutComponent.BUTTON_TOGGLE_SOFT_INPUT -> ToggleDrawables(
+                R.drawable.ic_touch_enabled,
+                null,
+                R.drawable.ic_touch_disabled,
+            )
+            else -> null
         }
     }
+
+    private data class ToggleDrawables(val enabled: Int, val enabledPressed: Int?, val disabled: Int)
 }

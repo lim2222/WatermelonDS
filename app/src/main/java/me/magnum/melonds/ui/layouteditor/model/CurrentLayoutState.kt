@@ -6,4 +6,5 @@ import me.magnum.melonds.domain.model.layout.UILayout
 data class CurrentLayoutState(
     val layout: UILayout,
     val orientation: LayoutConfiguration.LayoutOrientation,
+    val buttonPackName: String?,
 )

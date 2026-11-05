@@ -2,26 +2,17 @@ package me.magnum.melonds.ui.emulator.input.view
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.animation.DecelerateInterpolator
-import androidx.appcompat.widget.AppCompatImageView
 
+/**
+ * The taiko drum button. Press feedback (image swap, scale and dim fallback) is provided by
+ * [PressableButtonImageView]; this class only keeps the API used by the input handler.
+ */
 class TaikoButtonView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null
-) : AppCompatImageView(context, attrs) {
-
-    var normalDrawableId: Int = -1
-    var pressedDrawableId: Int = -1
-    private var isPressed = false
+    context: Context,
+    attrs: AttributeSet? = null,
+) : PressableButtonImageView(context, attrs) {
 
     fun setPressedState(pressed: Boolean) {
-        if (this.isPressed == pressed) return
-        this.isPressed = pressed
-        setImageResource(if (pressed) pressedDrawableId else normalDrawableId)
-        animate()
-            .scaleX(if (pressed) 0.9f else 1f)
-            .scaleY(if (pressed) 0.9f else 1f)
-            .setDuration(80)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
+        isPressed = pressed
     }
 }

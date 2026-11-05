@@ -67,6 +67,7 @@ class LayoutEditorManagerView(
 
     interface LayoutEditorManagerListener {
         fun openBackgroundPicker(layoutTarget: LayoutTarget, selectedBackgroundId: UUID?)
+        fun openButtonPackPicker()
         fun onStoreLayoutChanges()
         fun onSaveLayoutAndExit()
         fun onSaveLayoutAsNewAndExit()
@@ -607,6 +608,13 @@ class LayoutEditorManagerView(
         )
     }
 
+    /** Rebuilds the editor views so newly installed overlay artwork is displayed immediately. */
+    fun refreshLayoutArtwork() {
+        val layout = viewModel.currentLayout.value?.layout ?: return
+        binding.viewLayoutEditor.deselectComponent()
+        binding.viewLayoutEditor.instantiateLayout(layout, layoutTarget)
+    }
+
     fun updateBackground(background: RuntimeBackground) {
         picasso.load(background.background?.uri).into(binding.imageBackground, object : Callback {
             override fun onSuccess() {
@@ -762,6 +770,10 @@ class LayoutEditorManagerView(
         when (option) {
             MenuOption.PROPERTIES -> openPropertiesDialog()
             MenuOption.BACKGROUNDS -> openBackgroundsConfigDialog()
+            MenuOption.BUTTON_PACK -> {
+                listener?.onStoreLayoutChanges()
+                listener?.openButtonPackPicker()
+            }
             MenuOption.REVERT -> viewModel.revertLayoutChanges()
             MenuOption.RESET -> viewModel.resetLayout()
             MenuOption.SAVE_AS_NEW -> showLayoutNameInputDialog(
@@ -803,6 +815,7 @@ class LayoutEditorManagerView(
         return buildList {
             add(MenuOption.PROPERTIES)
             add(MenuOption.BACKGROUNDS)
+            add(MenuOption.BUTTON_PACK)
             add(MenuOption.REVERT)
             add(MenuOption.RESET)
             if (viewModel.canSaveLayoutAsNew()) {

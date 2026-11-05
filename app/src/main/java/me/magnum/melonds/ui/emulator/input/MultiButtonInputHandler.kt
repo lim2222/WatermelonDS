@@ -14,8 +14,10 @@ abstract class MultiButtonInputHandler(inputListener: IInputListener, enableHapt
     private val newPressedInputs = mutableListOf<Input>()
     // Reusable input list to avoid memory allocations
     private val tempInputList = mutableListOf<Input>()
+    private var lastView: View? = null
 
     override fun onTouch(v: View, event: MotionEvent): Boolean {
+        lastView = v
         if (!areDimensionsInitialized) {
             initDimensions(v.width, v.height)
             areDimensionsInitialized = true
@@ -63,9 +65,24 @@ abstract class MultiButtonInputHandler(inputListener: IInputListener, enableHapt
 
         pressedInputs.clear()
         pressedInputs.addAll(newPressedInputs)
+        onPressedInputsChanged(v, pressedInputs)
 
         return true
     }
+
+    /** Releases every pressed input, so no button remains stuck (for example when the view is hidden). */
+    fun release() {
+        val view = lastView ?: return
+        if (pressedInputs.isNotEmpty()) {
+            pressedInputs.forEach { inputListener.onKeyReleased(it) }
+            pressedInputs.clear()
+        }
+        newPressedInputs.clear()
+        onPressedInputsChanged(view, pressedInputs)
+    }
+
+    /** Called whenever the set of pressed inputs changes, with an empty list once everything is released. */
+    protected open fun onPressedInputsChanged(v: View, pressed: List<Input>) {}
 
     private fun initDimensions(viewWidth: Int, viewHeight: Int) {
         val radiusSquared = (viewWidth * 256f / 512f).pow(2)

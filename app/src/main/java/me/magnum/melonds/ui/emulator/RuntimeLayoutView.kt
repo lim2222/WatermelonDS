@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.view.View
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,11 +18,16 @@ import me.magnum.melonds.ui.emulator.input.DpadInputHandler
 import me.magnum.melonds.ui.emulator.input.FrontendInputHandler
 import me.magnum.melonds.ui.emulator.input.HybridScreenTouchscreenInputHandler
 import me.magnum.melonds.ui.emulator.input.IInputListener
+import me.magnum.melonds.ui.emulator.input.MultiButtonInputHandler
 import me.magnum.melonds.ui.emulator.input.Slot2AnalogInput
 import me.magnum.melonds.ui.emulator.input.Slot2AnalogInputHandler
 import me.magnum.melonds.ui.emulator.input.SingleButtonInputHandler
 import me.magnum.melonds.ui.emulator.input.TataconInputHandler
 import me.magnum.melonds.ui.emulator.input.TouchscreenInputHandler
+import me.magnum.melonds.ui.emulator.input.view.ButtonsView
+import me.magnum.melonds.ui.emulator.input.view.DpadDirection
+import me.magnum.melonds.ui.emulator.input.view.DpadView
+import me.magnum.melonds.ui.emulator.input.view.PressableButtonImageView
 import me.magnum.melonds.ui.emulator.input.view.TataconView
 import me.magnum.melonds.ui.emulator.input.view.TaikoButtonView
 import me.magnum.melonds.ui.emulator.input.view.ToggleableImageView
@@ -45,6 +51,8 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
     private var slot2AnalogInput: Slot2AnalogInput? = null
     private var slot2AnalogHandler: Slot2AnalogInputHandler? = null
     private var tataconHandler: TataconInputHandler? = null
+    private var dpadInputHandler: MultiButtonInputHandler? = null
+    private var buttonsInputHandler: MultiButtonInputHandler? = null
     private val virtualButtonInputs = mutableMapOf<LayoutComponent, SingleButtonInputHandler>()
     private val blockingComponentRect = Rect()
 
@@ -100,6 +108,8 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
     private fun updateInputs() {
         releaseVirtualButtonInputs()
         virtualButtonInputs.clear()
+        dpadInputHandler = null
+        buttonsInputHandler = null
         slot2AnalogHandler = null
         tataconHandler = null
         val currentRuntimeLayout = currentRuntimeLayout
@@ -130,8 +140,16 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
             }
         }
         systemInputHandler?.let {
-            getLayoutComponentView(LayoutComponent.DPAD)?.view?.setOnTouchListener(DpadInputHandler(it, enableHapticFeedback, touchVibrator))
-            getLayoutComponentView(LayoutComponent.BUTTONS)?.view?.setOnTouchListener(ButtonsInputHandler(it, enableHapticFeedback, touchVibrator))
+            getLayoutComponentView(LayoutComponent.DPAD)?.view?.let { view ->
+                dpadInputHandler = DpadInputHandler(it, enableHapticFeedback, touchVibrator).also { handler ->
+                    view.setOnTouchListener(handler)
+                }
+            }
+            getLayoutComponentView(LayoutComponent.BUTTONS)?.view?.let { view ->
+                buttonsInputHandler = ButtonsInputHandler(it, enableHapticFeedback, touchVibrator).also { handler ->
+                    view.setOnTouchListener(handler)
+                }
+            }
             for (component in listOf(LayoutComponent.BUTTON_A, LayoutComponent.BUTTON_B, LayoutComponent.BUTTON_X, LayoutComponent.BUTTON_Y)) {
                 val componentView = getLayoutComponentView(component) ?: continue
                 val handler = SingleButtonInputHandler(it, component.matchingInputs.single(), enableHapticFeedback, touchVibrator, componentView.buttonMode)
@@ -200,12 +218,16 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
     fun releaseVirtualButtonInputs() {
         slot2AnalogHandler?.release()
         virtualButtonInputs.values.forEach { it.release() }
+        dpadInputHandler?.release()
+        buttonsInputHandler?.release()
         tataconHandler?.release()
     }
 
     override fun destroyLayout() {
         releaseVirtualButtonInputs()
         virtualButtonInputs.clear()
+        dpadInputHandler = null
+        buttonsInputHandler = null
         slot2AnalogHandler = null
         tataconHandler = null
         super.destroyLayout()
@@ -292,6 +314,14 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
         )
     }
 
+    private fun resetPressState(view: View) {
+        when (view) {
+            is DpadView -> view.setDirection(DpadDirection.NONE)
+            is ButtonsView -> view.setPressedInputs(emptyList())
+            is PressableButtonImageView -> view.isPressed = false
+        }
+    }
+
     private fun updateVisibility() {
         // A component that is about to be hidden must not leave any of its inputs pressed
         tataconHandler?.release()
@@ -344,8 +374,13 @@ class RuntimeLayoutView(context: Context, attrs: AttributeSet? = null) : LayoutV
         hiddenComponents.forEach { component ->
             if (!component.isScreen()) {
                 if (component == LayoutComponent.SLOT2_ANALOG) slot2AnalogHandler?.release()
+                if (component == LayoutComponent.DPAD) dpadInputHandler?.release()
+                if (component == LayoutComponent.BUTTONS) buttonsInputHandler?.release()
                 virtualButtonInputs[component]?.release()
-                getLayoutComponentView(component)?.view?.isVisible = false
+                getLayoutComponentView(component)?.view?.let { view ->
+                    resetPressState(view)
+                    view.isVisible = false
+                }
             }
         }
         visibleComponents.forEach { component ->

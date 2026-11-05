@@ -685,6 +685,11 @@
     <string name="background_deleted">Background deleted</string>
     <string name="background_add_processing_failed">Failed to process the selected background image. Make sure it\'s not corrupted.</string>
 
+    <string name="button_pack">Button pack</string>
+    <string name="button_pack_import_success">Button pack installed (%1$d images).</string>
+    <string name="button_pack_import_empty">The ZIP does not contain any valid button images.</string>
+    <string name="button_pack_import_failed">Could not import the button pack ZIP.</string>
+
     <string name="retro_achievements_login_description">Login with RetroAchievements to view achievements that you can unlock while playing this game!</string>
     <string name="login_with_retro_achievements">Login with RetroAchievements</string>
     <string name="login">Login</string>

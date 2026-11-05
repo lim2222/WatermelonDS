@@ -2589,6 +2589,7 @@ class EmulatorViewModel @Inject constructor(
                         isHapticFeedbackEnabled = config.isHapticFeedbackEnabled,
                         layoutOrientation = currentLayoutConfiguration.orientation,
                         layout = adjustedLayout,
+                        buttonPackName = currentLayoutConfiguration.buttonPackName,
                     )
                 }
             }.collect(_runtimeLayout)

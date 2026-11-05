@@ -4,11 +4,14 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.hardware.display.DisplayManager
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
+import android.provider.OpenableColumns
 import android.view.Display
 import android.view.KeyEvent
 import android.widget.RelativeLayout
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -26,8 +29,11 @@ import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import com.squareup.picasso.Picasso
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.magnum.melonds.R
+import me.magnum.melonds.common.buttonpack.ButtonPack
 import me.magnum.melonds.domain.model.Rect
 import me.magnum.melonds.domain.model.layout.Insets
 import me.magnum.melonds.domain.model.layout.ScreenFold
@@ -40,6 +46,7 @@ import me.magnum.melonds.impl.layout.SecondaryDisplaySelector
 import me.magnum.melonds.ui.backgrounds.BackgroundsActivity
 import me.magnum.melonds.ui.layouteditor.model.LayoutTarget
 import me.magnum.melonds.ui.layouteditor.model.ScreenEditorState
+import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 
@@ -53,6 +60,7 @@ class LayoutEditorActivity : AppCompatActivity() {
     enum class MenuOption(@field:StringRes val stringRes: Int) {
         PROPERTIES(R.string.properties),
         BACKGROUNDS(R.string.background),
+        BUTTON_PACK(R.string.button_pack),
         REVERT(R.string.revert_changes),
         RESET(R.string.reset_default),
         SAVE_AS_NEW(R.string.save_as_new),
@@ -103,6 +111,11 @@ class LayoutEditorActivity : AppCompatActivity() {
         }
     }
 
+    private val buttonPackPickerLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@registerForActivityResult
+        importButtonPack(uri)
+    }
+
     private val layoutEditorManagerListener = object : LayoutEditorManagerView.LayoutEditorManagerListener {
         override fun openBackgroundPicker(layoutTarget: LayoutTarget, selectedBackgroundId: UUID?) {
             storeLayoutChanges()
@@ -113,6 +126,18 @@ class LayoutEditorActivity : AppCompatActivity() {
                 LayoutTarget.MAIN_SCREEN -> mainScreenBackgroundPickerLauncher.launch(intent)
                 LayoutTarget.SECONDARY_SCREEN -> secondaryScreenBackgroundPickerLauncher.launch(intent)
             }
+        }
+
+        override fun openButtonPackPicker() {
+            storeLayoutChanges()
+            buttonPackPickerLauncher.launch(
+                arrayOf(
+                    "application/zip",
+                    "application/x-zip-compressed",
+                    "application/octet-stream",
+                    "application/x-compressed",
+                )
+            )
         }
 
         override fun onStoreLayoutChanges() {
@@ -196,6 +221,7 @@ class LayoutEditorActivity : AppCompatActivity() {
                         layoutEditorManager.layoutEditorView.destroyLayout()
                         externalLayoutEditorPresentation?.layoutEditorManager?.layoutEditorView?.destroyLayout()
                     } else {
+                        ButtonPack.setActivePack(it.buttonPackName)
                         handler.removeCallbacksAndMessages(null)
                         handler.post {
                             layoutEditorManager.layoutEditorView.instantiateLayout(it.layout)
@@ -331,6 +357,64 @@ class LayoutEditorActivity : AppCompatActivity() {
             it.hide(WindowInsetsCompat.Type.navigationBars())
             it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+    }
+
+    private fun importButtonPack(uri: Uri) {
+        val packName = ButtonPack.sanitizePackName(getSelectedFilePath(uri))
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    contentResolver.openInputStream(uri)?.use {
+                        ButtonPack.installFromZip(this@LayoutEditorActivity, it, packName)
+                    } ?: Result.failure(IOException("Unable to open the selected file"))
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+            result.onSuccess { imageCount ->
+                if (imageCount > 0) {
+                    Toast.makeText(
+                        this@LayoutEditorActivity,
+                        getString(R.string.button_pack_import_success, imageCount),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    viewModel.setButtonPackName(packName)
+                    ButtonPack.setActivePack(packName)
+                    storeLayoutChanges()
+                    refreshLayoutArtwork()
+                } else {
+                    Toast.makeText(
+                        this@LayoutEditorActivity,
+                        R.string.button_pack_import_empty,
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            }.onFailure {
+                Toast.makeText(
+                    this@LayoutEditorActivity,
+                    R.string.button_pack_import_failed,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
+
+    private fun getSelectedFilePath(uri: Uri): String {
+        return runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0) cursor.getString(nameIndex) else null
+                } else {
+                    null
+                }
+            }
+        }.getOrNull() ?: uri.lastPathSegment ?: "pack"
+    }
+
+    private fun refreshLayoutArtwork() {
+        layoutEditorManager.refreshLayoutArtwork()
+        externalLayoutEditorPresentation?.layoutEditorManager?.refreshLayoutArtwork()
     }
 
     private fun saveLayoutAndExit() {

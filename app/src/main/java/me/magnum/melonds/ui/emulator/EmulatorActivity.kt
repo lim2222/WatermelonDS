@@ -73,6 +73,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import me.magnum.melonds.MelonEmulator
 import me.magnum.melonds.R
 import me.magnum.melonds.common.PermissionHandler
+import me.magnum.melonds.common.buttonpack.ButtonPack
 import me.magnum.melonds.databinding.ActivityEmulatorBinding
 import me.magnum.melonds.domain.model.ConsoleType
 import me.magnum.melonds.domain.model.ControllerConfiguration
@@ -1584,6 +1585,7 @@ class EmulatorActivity : AppCompatActivity() {
                     setSystemInputHandler(melonTouchHandler)
                     setSlot2AnalogInput(slot2AnalogInput)
                     viewModel.runtimeLayout.value?.let {
+                        ButtonPack.setActivePack(it.buttonPackName)
                         updateLayout(it)
                     }
 
@@ -1752,6 +1754,7 @@ class EmulatorActivity : AppCompatActivity() {
     private fun setupSoftInput(layoutConfiguration: RuntimeInputLayoutConfiguration?) {
         if (::nativeInputListener.isInitialized) nativeInputListener.releaseChordInputs()
         if (layoutConfiguration != null) {
+            ButtonPack.setActivePack(layoutConfiguration.buttonPackName)
             setLayoutOrientation(layoutConfiguration.layoutOrientation)
             with(binding.viewLayoutControls) {
                 instantiateLayout(layoutConfiguration, LayoutTarget.MAIN_SCREEN)
@@ -1771,6 +1774,7 @@ class EmulatorActivity : AppCompatActivity() {
                 scheduleStartupPresentationRefreshes()
             }
         } else {
+            ButtonPack.setActivePack(null)
             binding.viewLayoutControls.destroyLayout()
             presentation?.layoutView?.destroyLayout()
         }

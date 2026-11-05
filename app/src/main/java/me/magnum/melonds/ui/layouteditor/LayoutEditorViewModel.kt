@@ -116,7 +116,11 @@ class LayoutEditorViewModel @Inject constructor(
                     val (variant, layout) = it
                     val currentLayoutConfig = _currentLayoutConfiguration.value ?: return@collect
                     currentLayoutVariant = variant
-                    _currentLayout.value = CurrentLayoutState(layout, currentLayoutConfig.orientation)
+                    _currentLayout.value = CurrentLayoutState(
+                        layout = layout,
+                        orientation = currentLayoutConfig.orientation,
+                        buttonPackName = currentLayoutConfig.buttonPackName,
+                    )
                 }
             }
         }
@@ -213,6 +217,12 @@ class LayoutEditorViewModel @Inject constructor(
         }
     }
 
+    fun setButtonPackName(name: String?) {
+        _currentLayoutConfiguration.update {
+            it?.copy(buttonPackName = name)
+        }
+    }
+
     fun saveCurrentLayout() {
         _currentLayoutConfiguration.value?.let {
             viewModelScope.launch {
@@ -245,6 +255,7 @@ class LayoutEditorViewModel @Inject constructor(
                 useCustomOpacity = false,
                 opacity = 50,
                 layoutVariants = emptyMap(),
+                buttonPackName = null,
             )
         }
     }

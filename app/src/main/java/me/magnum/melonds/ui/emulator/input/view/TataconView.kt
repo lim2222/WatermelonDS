@@ -11,6 +11,7 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.view.View
 import me.magnum.melonds.R
+import me.magnum.melonds.common.buttonpack.ButtonPack
 import me.magnum.melonds.domain.model.Input
 import kotlin.math.max
 
@@ -27,7 +28,7 @@ enum class TataconRegion(val input: Input) {
 }
 
 class TataconView(context: Context) : View(context) {
-    private val artwork: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.tatacon)?.let { cropArtwork(it) }
+    private val artwork: Bitmap? = loadArtwork(context)?.let { cropArtwork(it) }
     private val srcRect = Rect()
     private val dstRect = RectF()
     private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
@@ -109,6 +110,11 @@ class TataconView(context: Context) : View(context) {
             }
         }
         return if (x < w / 2f) TataconRegion.RIM_LEFT else TataconRegion.RIM_RIGHT
+    }
+
+    private fun loadArtwork(context: Context): Bitmap? {
+        ButtonPack.load(context, R.drawable.tatacon)?.let { return it }
+        return BitmapFactory.decodeResource(resources, R.drawable.tatacon)
     }
 
     companion object {
