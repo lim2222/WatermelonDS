@@ -282,6 +282,7 @@ class LayoutEditorManagerView(
             selectedViewIsScreen = view.component.isScreen()
             selectedViewSupportsAspectRatio = view.component.supportsAspectRatioSelection()
             selectedScreenComponent = view.component
+            val supportsIndependentAxes = selectedViewIsScreen || view.component == LayoutComponent.TATACON
             binding.buttonInputMode.isVisible = view.component.supportsButtonMode()
             binding.buttonInputMode.text = resources.getString(R.string.button_mode_value, buttonModeLabel(view.buttonMode))
             selectedAspectRatio = when (view.component) {
@@ -303,6 +304,7 @@ class LayoutEditorManagerView(
                 maxHeight,
                 minSize,
                 selectedViewIsScreen,
+                supportsIndependentAxes,
                 selectedAlpha,
                 view.onTop,
             )
@@ -540,14 +542,18 @@ class LayoutEditorManagerView(
             return
         }
 
-        val actionLabels = mutableListOf(
-            R.string.label_position,
-            R.string.label_size,
-            R.string.center_horizontal,
-            R.string.center_vertical,
-            R.string.delete,
-        )
-        if (editor.getSelectedComponent()?.supportsButtonMode() == true) actionLabels.add(R.string.button_mode)
+        val selectedComponent = editor.getSelectedComponent()
+        val actionLabels = mutableListOf(R.string.label_position)
+        if (selectedComponent == LayoutComponent.TATACON) {
+            actionLabels.add(R.string.label_width)
+            actionLabels.add(R.string.label_height)
+        } else {
+            actionLabels.add(R.string.label_size)
+        }
+        actionLabels.add(R.string.center_horizontal)
+        actionLabels.add(R.string.center_vertical)
+        actionLabels.add(R.string.delete)
+        if (selectedComponent?.supportsButtonMode() == true) actionLabels.add(R.string.button_mode)
         val themedContext = android.view.ContextThemeWrapper(context, R.style.AppTheme)
         AlertDialog.Builder(themedContext)
             .setTitle(R.string.edit)
@@ -555,6 +561,8 @@ class LayoutEditorManagerView(
                 when (actionLabels[which]) {
                     R.string.label_position -> openSelectedViewPositionDialog()
                     R.string.label_size -> openSelectedViewSizeDialog()
+                    R.string.label_width -> openSelectedViewPropertyDialog(LayoutComponentEditableProperty.WIDTH)
+                    R.string.label_height -> openSelectedViewPropertyDialog(LayoutComponentEditableProperty.HEIGHT)
                     R.string.center_horizontal -> editor.centerSelectedViewHorizontally()
                     R.string.center_vertical -> editor.centerSelectedViewVertically()
                     R.string.delete -> editor.deleteSelectedView()
@@ -883,6 +891,7 @@ class LayoutEditorManagerView(
         maxHeight: Int,
         minSize: Int,
         isScreen: Boolean,
+        supportsIndependentAxes: Boolean,
         alpha: Float,
         onTop: Boolean,
         animate: Boolean = true,
@@ -895,7 +904,7 @@ class LayoutEditorManagerView(
         updatingScalingControls = true
 
         try {
-            if (isScreen) {
+            if (supportsIndependentAxes) {
                 binding.seekBarWidth.apply {
                     max = maxWidth - minSize
                     progress = (widthScale * (maxWidth - minSize)).roundToInt().coerceIn(0, max)
@@ -931,13 +940,13 @@ class LayoutEditorManagerView(
             updatingScalingControls = false
         }
 
-        binding.layoutSizeLabels.isVisible = !isScreen
-        binding.seekBarSize.isVisible = !isScreen
-        binding.buttonEditSize.isVisible = !isScreen
-        binding.layoutWidthLabels.isVisible = isScreen
-        binding.seekBarWidth.isVisible = isScreen
-        binding.layoutHeightLabels.isVisible = isScreen
-        binding.seekBarHeight.isVisible = isScreen
+        binding.layoutSizeLabels.isVisible = !supportsIndependentAxes
+        binding.seekBarSize.isVisible = !supportsIndependentAxes
+        binding.buttonEditSize.isVisible = !supportsIndependentAxes
+        binding.layoutWidthLabels.isVisible = supportsIndependentAxes
+        binding.seekBarWidth.isVisible = supportsIndependentAxes
+        binding.layoutHeightLabels.isVisible = supportsIndependentAxes
+        binding.seekBarHeight.isVisible = supportsIndependentAxes
         binding.layoutAlphaLabels.isVisible = true
         binding.seekBarAlpha.isVisible = true
         binding.layoutAspectRatio.isVisible = selectedViewSupportsAspectRatio
