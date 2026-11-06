@@ -334,6 +334,11 @@
     <string name="background_deleted">Sfondo eliminato</string>
     <string name="background_add_processing_failed">Si è verificato un errore durante l\'elaborazione dell\'immagine di sfondo selezionata. Assicurati che non sia corrotta.</string>
 
+    <string name="button_pack">Pacchetto pulsanti</string>
+    <string name="button_pack_import_success">Pacchetto pulsanti installato (%1$d immagini).</string>
+    <string name="button_pack_import_empty">Il file ZIP non contiene immagini valide per i pulsanti.</string>
+    <string name="button_pack_import_failed">Impossibile importare il file ZIP del pacchetto pulsanti.</string>
+
     <string name="retro_achievements_login_description">Accedi con RetroAchievements per vedere gli obiettivi che puoi sbloccare giocando a questo gioco!</string>
     <string name="login_with_retro_achievements">Accedi con RetroAchievements</string>
     <string name="login">Accedi</string>

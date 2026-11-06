@@ -301,6 +301,11 @@
     <string name="background_deleted">Arrière-plan supprimé</string>
     <string name="background_add_processing_failed">Le traitement de l\'image d\'arrière-plan sélectionnée a échoué. Veuillez vérifier qu\'elle n\'est pas corrompue.</string>
 
+    <string name="button_pack">Pack de boutons</string>
+    <string name="button_pack_import_success">Pack de boutons installé (%1$d images).</string>
+    <string name="button_pack_import_empty">Le fichier ZIP ne contient aucune image de bouton valide.</string>
+    <string name="button_pack_import_failed">Impossible d\'importer le fichier ZIP du pack de boutons.</string>
+
     <string name="retro_achievements_login_description">Connectez-vous à RetroAchievements pour consulter les succès que vous pouvez déverouiller en jouant à ce jeu !</string>
     <string name="login_with_retro_achievements">Connexion à RetroAchievements</string>
     <string name="login">Connexion</string>

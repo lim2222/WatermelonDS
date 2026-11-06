@@ -405,6 +405,11 @@
     <string name="background_deleted">Latar belakang terhapus</string>
     <string name="background_add_processing_failed">Gagal untuk memproses gambar latar belakang terpilih. Pastikan tidak korup.</string>
 
+    <string name="button_pack">Paket tombol</string>
+    <string name="button_pack_import_success">Paket tombol terpasang (%1$d gambar).</string>
+    <string name="button_pack_import_empty">Berkas ZIP tidak berisi gambar tombol yang valid.</string>
+    <string name="button_pack_import_failed">Tidak dapat mengimpor berkas ZIP paket tombol.</string>
+
     <string name="retro_achievements_login_description">Masuk dengan RetroAchievements untuk melihat pencapaian yang anda dapat buka ketika memainkan permainan ini!</string>
     <string name="login_with_retro_achievements">Masuk dengan RetroAchievements</string>
     <string name="login">Masuk</string>

@@ -397,6 +397,11 @@
     <string name="background_name">Nombre de fondo</string>
     <string name="background_deleted">Fondo eliminado</string>
     <string name="background_add_processing_failed">Error al procesar la imagen de fondo seleccionada. Asegúrate de que no esté dañada.</string>
+
+    <string name="button_pack">Paquete de botones</string>
+    <string name="button_pack_import_success">Paquete de botones instalado (%1$d imágenes).</string>
+    <string name="button_pack_import_empty">El archivo ZIP no contiene ninguna imagen de botón válida.</string>
+    <string name="button_pack_import_failed">No se pudo importar el archivo ZIP del paquete de botones.</string>
     
     <string name="retro_achievements_login_description">¡Inicia sesión con RetroAchievements para ver los logros que puedes desbloquear mientras juegas este juego!</string>
     <string name="login_with_retro_achievements">Inicia sesión con RetroAchievements</string>

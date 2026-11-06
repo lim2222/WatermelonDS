@@ -281,6 +281,11 @@
     <string name="background_deleted">Plano de fundo deletado</string>
     <string name="background_add_processing_failed">Falha ao processar a imagem de plano de fundo selecionada. Certifique-se de que não está corrompida.</string>
 
+    <string name="button_pack">Pacote de botões</string>
+    <string name="button_pack_import_success">Pacote de botões instalado (%1$d imagens).</string>
+    <string name="button_pack_import_empty">O arquivo ZIP não contém nenhuma imagem de botão válida.</string>
+    <string name="button_pack_import_failed">Não foi possível importar o arquivo ZIP do pacote de botões.</string>
+
     <string-array name="fast_forward_speed_multiplier_options">
         <item>Ilimitado</item>
         <item>1.5x</item>

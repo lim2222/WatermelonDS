@@ -404,6 +404,11 @@
     <string name="background_name">Имя фона</string>
     <string name="background_deleted">Задний фон удалён</string>
     <string name="background_add_processing_failed">Не удалось обработать выбранное изображение. Убедитесь, что файл не повреждён.</string>
+
+    <string name="button_pack">Набор кнопок</string>
+    <string name="button_pack_import_success">Набор кнопок установлен (%1$d изображений).</string>
+    <string name="button_pack_import_empty">ZIP-архив не содержит допустимых изображений кнопок.</string>
+    <string name="button_pack_import_failed">Не удалось импортировать ZIP-архив набора кнопок.</string>
     
     <string name="retro_achievements_login_description">Выполните вход в RetroAchievements для загрузки доступных достижений для данной игры.</string>
     <string name="login_with_retro_achievements">Выполнить вход в RetroAchievements</string>

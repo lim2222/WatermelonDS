@@ -566,6 +566,11 @@
     <string name="background_deleted">背景已删除</string>
     <string name="background_add_processing_failed">处理所选背景图像失败。请确保它未损坏。</string>
 
+    <string name="button_pack">按键包</string>
+    <string name="button_pack_import_success">按键包已安装（%1$d 张图片）。</string>
+    <string name="button_pack_import_empty">该 ZIP 文件不包含任何有效的按键图片。</string>
+    <string name="button_pack_import_failed">无法导入按键包 ZIP 文件。</string>
+
     <string name="retro_achievements_login_description">使用 RetroAchievements 登录以查看游玩这个游戏时可解锁的成就！</string>
     <string name="login_with_retro_achievements">使用 RetroAchievements 登录</string>
     <string name="login">登录</string>
